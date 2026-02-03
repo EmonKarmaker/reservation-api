@@ -135,22 +135,24 @@ async def get_me(
 @router.post("/create", response_model=AdminResponse)
 async def create_admin(
     request: CreateAdminRequest,
-    db:AsyncSession = Depends(get_db),
-    current_admin: AdminUser=Depends(get_current_admin)
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin)
 ):
-    """Create a now admin(only superadmins can do this)"""
-    #check if current admin is superadmin
+    """Create a new admin (only super admins can do this)."""
+    
+    # Check if current admin is super admin
     if current_admin.role != "SUPER_ADMIN":
-        raise HTTPException(status_code=403, detail="Only super admin cam create new admins")
-    #check if email already exists
-    result =await db.execute(
-        select(AdminUser).where(AdminUser.email==request.email)
-
+        raise HTTPException(status_code=403, detail="Only super admins can create new admins")
+    
+    # Check if email already exists
+    result = await db.execute(
+        select(AdminUser).where(AdminUser.email == request.email)
     )
     if result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already registered")
-# Create admin
-    admin = AdminUser(
+    
+    # Create admin
+    new_admin = AdminUser(
         email=request.email,
         password_hash=hash_password(request.password),
         full_name=request.name,
@@ -158,16 +160,18 @@ async def create_admin(
         is_active=True,
         created_at=datetime.utcnow(),
     )
-    db.add(admin)
+    
+    db.add(new_admin)
     await db.commit()
-    await db.refresh(admin)
+    await db.refresh(new_admin)
+    
     return AdminResponse(
-        id=str(admin.id),
-        email=admin.email,
-        role=admin.role,
-        is_active=admin.is_active,
-        created_at=admin.created_at.isoformat() if admin.created_at else None
-
+        id=str(new_admin.id),
+        email=new_admin.email,
+        name=new_admin.full_name,
+        role=new_admin.role,
+        is_active=new_admin.is_active,
+        created_at=new_admin.created_at.isoformat() if new_admin.created_at else None
     )
 @router.post("/setup-first-admin", response_model=AdminResponse)
 async def setup(

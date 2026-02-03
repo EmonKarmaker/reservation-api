@@ -11,6 +11,24 @@ from app.api.v1.admin.auth import get_current_admin
 
 
 router = APIRouter()
+ALLOWED_INDUSTRIES = {"HOTEL", "RESTAURANT", "SALON", "CLINIC", "OTHER", "SPA"}
+
+
+
+def map_industry(value: str | None) -> tuple[str, str | None]:
+    """
+    Returns:
+      - enum_value: always one of ALLOWED_INDUSTRIES
+      - label_value: original normalized input
+    """
+    if not value:
+        return "OTHER", None
+
+    label = value.strip().upper()
+    if label in ALLOWED_INDUSTRIES:
+        return label, label
+    return "OTHER", label
+
 
 
 # ============== Request/Response Models ==============
@@ -33,6 +51,7 @@ class BusinessResponse(BaseModel):
     business_name: str
     slug: str
     industry: str
+    industry_label: str | None = None   # ✅ add this
     timezone: str
     status: str | None
     created_at: str | None
@@ -80,6 +99,7 @@ async def list_businesses(
             business_name=b.business_name,
             slug=b.slug,
             industry=b.industry,
+            industry_label=b.industry_label, 
             timezone=b.timezone,
             status=b.status,
             created_at=b.created_at.isoformat() if b.created_at else None
@@ -96,33 +116,34 @@ async def create_business(
 ):
     """Create a new business."""
     
-    # Check if slug already exists
     result = await db.execute(
         select(Business).where(Business.slug == request.slug)
     )
     if result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Slug already exists")
-    
+    enum_industry, industry_label = map_industry(request.industry)
+
     business = Business(
-        business_name=request.business_name,
-        slug=request.slug,
-        industry=request.industry,
-        timezone=request.timezone,
-        status="ACTIVE",
-        created_by_admin_id=current_admin.id,
-        created_at=datetime.utcnow(),
-    )
+    business_name=request.business_name,
+    slug=request.slug,
+    industry=enum_industry,
+    industry_label=industry_label,
+    timezone=request.timezone,
+    status="ACTIVE",
+    created_by_admin_id=current_admin.id,
+    created_at=datetime.utcnow(),
+)
+
     
     db.add(business)
     await db.flush()
     
-    # Create default AI settings
     ai_settings = BusinessAISettings(
         business_id=business.id,
         agent_name="Assistant",
         tone_of_voice="friendly and professional",
         welcome_message="Hello! How can I help you today?",
-        fallback_message="I'm sorry, I didn't understand that. Could you please rephrase?",
+        fallback_message="I'm sorry, I didn't understand that.",
         escalation_message="I'll connect you with a human representative.",
         max_retries=3,
         language="en",
@@ -137,6 +158,7 @@ async def create_business(
         business_name=business.business_name,
         slug=business.slug,
         industry=business.industry,
+        industry_label=business.industry_label,  # ✅ add here
         timezone=business.timezone,
         status=business.status,
         created_at=business.created_at.isoformat() if business.created_at else None
@@ -164,6 +186,8 @@ async def get_business(
         business_name=business.business_name,
         slug=business.slug,
         industry=business.industry,
+        industry_label=business.industry_label,
+
         timezone=business.timezone,
         status=business.status,
         created_at=business.created_at.isoformat() if business.created_at else None
@@ -203,6 +227,8 @@ async def update_business(
         business_name=business.business_name,
         slug=business.slug,
         industry=business.industry,
+        industry_label=business.industry_label,
+
         timezone=business.timezone,
         status=business.status,
         created_at=business.created_at.isoformat() if business.created_at else None

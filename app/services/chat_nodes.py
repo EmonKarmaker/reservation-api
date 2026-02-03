@@ -60,6 +60,7 @@ Respond with JSON only:
     "wants_human": true if user wants to talk to a human/agent/person, false otherwise,
     "booking_id_mentioned": "booking/tracking ID if mentioned (like BK-XXXXXX), or null"
 }}
+
 Intent definitions:
 - greet: Hello, hi, good morning, etc.
 - list_services: User wants to see what services are available
