@@ -1,4 +1,4 @@
-import uuid
+﻿import uuid
 from datetime import datetime, time
 from decimal import Decimal
 from sqlalchemy import String, Text, DateTime, ForeignKey, Numeric, Boolean, Integer, Enum, SmallInteger, Time
@@ -62,15 +62,21 @@ class BusinessAISettings(Base):
     allow_cancel_bookings: Mapped[bool] = mapped_column(Boolean, default=False)
     allow_reschedule_bookings: Mapped[bool] = mapped_column(Boolean, default=False)
     mention_promotions: Mapped[bool] = mapped_column(Boolean, default=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    business = relationship("Business", back_populates="ai_settings")
     welcome_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     fallback_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     escalation_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     max_retries: Mapped[int | None] = mapped_column(Integer, nullable=True)
     language: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    
+    # Booking Configuration (NEW)
+    min_notice_hours: Mapped[int] = mapped_column(Integer, default=24)
+    max_per_slot: Mapped[int] = mapped_column(Integer, default=1)
+    cancellation_policy: Mapped[str | None] = mapped_column(Text, nullable=True)
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    business = relationship("Business", back_populates="ai_settings")
 
 
 class BusinessNotificationSettings(Base):
@@ -105,8 +111,8 @@ class BusinessAvailabilityException(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # Relationships
     business = relationship("Business", back_populates="availability_exceptions")
+
 
 class ServiceImage(Base):
     """Images for services - shown when user asks for service details."""
@@ -166,7 +172,7 @@ class HandoffRequest(Base):
 
     # Relationships
     business = relationship("Business", back_populates="handoff_requests")
-    call_session=relationship("CallSession",back_populates="handoff", uselist=False)
+    call_session = relationship("CallSession", back_populates="handoff", uselist=False)
     conversation = relationship("Conversation", back_populates="handoff_requests")
     booking = relationship("Booking", back_populates="handoff_requests")
     assigned_admin = relationship("AdminUser", back_populates="assigned_handoffs")

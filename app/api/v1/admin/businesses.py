@@ -151,7 +151,10 @@ class AISettingsUpdate(BaseModel):
     escalation_message: str | None = None
     max_retries: int | None = None
     language: str | None = None
-
+    # Booking Configuration
+    min_notice_hours: int | None = None
+    max_per_slot: int | None = None
+    cancellation_policy: str | None = None
 
 class AISettingsResponse(BaseModel):
     id: str
@@ -163,6 +166,10 @@ class AISettingsResponse(BaseModel):
     escalation_message: str | None
     max_retries: int | None
     language: str | None
+    # Booking Configuration
+    min_notice_hours: int | None
+    max_per_slot: int | None
+    cancellation_policy: str | None
 
 
 # ============== Internal helpers ==============
@@ -648,6 +655,9 @@ async def get_ai_settings(
         escalation_message=settings.escalation_message,
         max_retries=settings.max_retries,
         language=settings.language,
+        min_notice_hours=settings.min_notice_hours,
+        max_per_slot=settings.max_per_slot,
+        cancellation_policy=settings.cancellation_policy,
     )
 
 
@@ -680,7 +690,12 @@ async def update_ai_settings(
         settings.max_retries = request.max_retries
     if request.language is not None:
         settings.language = request.language
-
+    if request.min_notice_hours is not None:
+        settings.min_notice_hours = request.min_notice_hours
+    if request.max_per_slot is not None:
+        settings.max_per_slot = request.max_per_slot
+    if request.cancellation_policy is not None:
+        settings.cancellation_policy = request.cancellation_policy
     settings.updated_at = datetime.utcnow()
     await db.commit()
     await db.refresh(settings)
@@ -695,4 +710,7 @@ async def update_ai_settings(
         escalation_message=settings.escalation_message,
         max_retries=settings.max_retries,
         language=settings.language,
+        min_notice_hours=settings.min_notice_hours,
+        max_per_slot=settings.max_per_slot,
+        cancellation_policy=settings.cancellation_policy,
     )
